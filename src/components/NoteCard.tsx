@@ -9,9 +9,11 @@ type Note = RouterOutputs["note"]["getAll"][0];
 export const NoteCard = ({
   note,
   onDelete,
+  onEdit,
 }: {
   note: Note;
   onDelete: () => void;
+  onEdit: () => void;
 }) => {
   const [isExpanded, setIsExpanded] = useState<boolean>(true);
 
@@ -32,6 +34,9 @@ export const NoteCard = ({
           </div>
         </div>
         <div className="card-actions mx-2 flex justify-end">
+          <button className="btn-xs btn px-5" onClick={onEdit}>
+            Edit
+          </button>
           <button className="btn-warning btn-xs btn px-5" onClick={onDelete}>
             Delete
           </button>

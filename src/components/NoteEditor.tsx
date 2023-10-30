@@ -5,8 +5,12 @@ import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
 
 export const NoteEditor = ({
+  editMode,
   onSave,
+  onCancel,
 }: {
+  editMode?: boolean;
+  onCancel?: () => void;
   onSave: (note: { title: string; content: string }) => void;
 }) => {
   const [code, setCode] = useState<string>("");
@@ -37,7 +41,13 @@ export const NoteEditor = ({
           className="border border-gray-300"
         />
       </div>
-      <div className="card-actions justify-end">
+      <div className="px-8 pb-4 card-actions justify-end">
+        {editMode && <button
+          onClick={onCancel}
+          className="btn-ghost btn btn-sm"
+        >
+          Cancel
+        </button>}
         <button
           onClick={() => {
             onSave({
@@ -47,7 +57,7 @@ export const NoteEditor = ({
             setCode("");
             setTitle("");
           }}
-          className="btn-primary btn"
+          className="btn-primary btn btn-sm"
           disabled={title.trim().length === 0 || code.trim().length === 0}
         >
           Save

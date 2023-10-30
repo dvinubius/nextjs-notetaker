@@ -7,6 +7,7 @@ import { api, type RouterOutputs } from "../utils/api";
 import { Header } from "../components/Header";
 import { NoteEditor } from "../components/NoteEditor";
 import { NoteCard } from "../components/NoteCard";
+import { Modal } from "../components/Modal";
 
 const Home: NextPage = () => {
   return (
@@ -32,6 +33,7 @@ const Content: React.FC = () => {
   const { data: sessionData } = useSession();
 
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const { data: topics, refetch: refetchTopics } = api.topic.getAll.useQuery(
     undefined, // no input
@@ -70,61 +72,98 @@ const Content: React.FC = () => {
     },
   });
 
+  const updateNote = api.note.update.useMutation({
+    onSuccess: () => {
+      void refetchNotes();
+    }
+  });
+
   return (
-    <div className="mx-5 mt-5 grid grid-cols-4 gap-2">
-      <div className="px-2">
-        <ul className="menu rounded-box w-56 bg-base-100 p-2">
-          {topics?.map((topic) => (
-            <li key={topic.id}>
-              <a
-                href="#"
-                onClick={(evt) => {
-                  evt.preventDefault();
-                  setSelectedTopic(topic);
-                }}
-              >
-                {topic.title}
-              </a>
-            </li>
-          ))}
-        </ul>
-        <div className="divider"></div>
-        <input
-          type="text"
-          placeholder="New Topic"
-          className="input-bordered input input-sm w-full"
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              createTopic.mutate({
-                title: e.currentTarget.value,
-              });
-              e.currentTarget.value = "";
-            }
-          }}
-        />
-      </div>
-      <div className="col-span-3">
-        <div>
-          {notes?.map((note) => (
-            <div key={note.id} className="mt-5">
-              <NoteCard
-                note={note}
-                onDelete={() => void deleteNote.mutate({ id: note.id })}
-              />
-            </div>
-          ))}
+    <>
+      <Modal open={!!editingId} onClose={() => setEditingId(null)}>
+        
+        <div className="my-4 text-2xl font-extrabold leading-none tracking-tight text-gray-900 md:text-2xl dark:text-white">
+          Edit Note
         </div>
 
-        <NoteEditor
-          onSave={({ title, content }) => {
-            void createNote.mutate({
-              title,
-              content,
-              topicId: selectedTopic?.id ?? "",
-            });
-          }}
-        />
+        <div className="mb-8">
+          <NoteEditor
+            editMode
+            onCancel={() => setEditingId(null)}
+            onSave={({ title, content }) => {
+              if (editingId === null) throw new Error("Internal: editing ID is null");
+              updateNote.mutate({
+                id: editingId, 
+                title, 
+                content});
+              setEditingId(null);
+            }}
+          />
+        </div>
+
+      </Modal>
+      <div className="mx-5 mt-5 grid grid-cols-4 gap-2">
+        <div className="px-2">
+          <ul className="menu rounded-box w-56 bg-base-100 p-2">
+            {topics?.map((topic) => (
+              <li key={topic.id}>
+                <a
+                  href="#"
+                  onClick={(evt) => {
+                    evt.preventDefault();
+                    setSelectedTopic(topic);
+                  }}
+                >
+                  {topic.title}
+                </a>
+              </li>
+            ))}
+          </ul>
+          <div className="divider"></div>
+          <input
+            type="text"
+            placeholder="New Topic"
+            className="input-bordered input input-sm w-full"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                createTopic.mutate({
+                  title: e.currentTarget.value,
+                });
+                e.currentTarget.value = "";
+              }
+            }}
+          />
+        </div>
+        <div className="col-span-3">
+          <div>
+            {notes?.map((note) => (
+              <div key={note.id} className="mt-5">
+                <NoteCard
+                  note={note}
+                  onDelete={() => void deleteNote.mutate({ id: note.id })}
+                  onEdit={() => setEditingId(note.id)}
+                />
+              </div>
+            ))}
+          </div>
+
+          <div className="my-4 text-2xl font-extrabold leading-none tracking-tight text-gray-900 md:text-2xl dark:text-white">
+            New Note
+          </div>
+
+          <div className="mb-8">
+            <NoteEditor
+              onSave={({ title, content }) => {
+                void createNote.mutate({
+                  title,
+                  content,
+                  topicId: selectedTopic?.id ?? "",
+                });
+              }}
+            />
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
